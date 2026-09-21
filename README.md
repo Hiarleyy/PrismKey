@@ -16,13 +16,6 @@
   Aplicação local para calcular hashes SHA-256, gerar chaves RSA, assinar arquivos e verificar assinaturas digitais.
 </p>
 
-## Demonstração
-
-<p align="center">
-  <video src="assets/demo/prismkey-demo.mp4" controls width="720">
-    Seu navegador não oferece suporte a vídeo HTML5. <a href="assets/demo/prismkey-demo.mp4">Baixe ou assista ao vídeo de demonstração</a>.
-  </video>
-</p>
 Aplicação desktop e linha de comando para calcular hashes SHA-256, gerar chaves RSA, assinar arquivos e verificar assinaturas digitais.
   Aplicação local para calcular hashes SHA-256, gerar chaves RSA, assinar arquivos e verificar assinaturas digitais.
 </p>
