@@ -7,7 +7,6 @@
 <h1 align="center">PrismKey</h1>
 
 <p align="center">
-  <img src="assets/icons/prismkey.png" alt="Logo do PrismKey" width="180">
   <img src="https://img.shields.io/badge/version-0.1.0-2f80ed?style=flat-square" alt="Versão 0.1.0">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-4caf50?style=flat-square" alt="Licença MIT"></a>
   <img src="https://img.shields.io/badge/platform-Windows-0078d4?style=flat-square" alt="Plataforma Windows">
@@ -19,8 +18,6 @@
 Aplicação desktop e linha de comando para calcular hashes SHA-256, gerar chaves RSA, assinar arquivos e verificar assinaturas digitais.
   Aplicação local para calcular hashes SHA-256, gerar chaves RSA, assinar arquivos e verificar assinaturas digitais.
 </p>
-
-Aplicação desktop e linha de comando para calcular hashes SHA-256, gerar chaves RSA, assinar arquivos e verificar assinaturas digitais.
 
 ## Recursos
 
