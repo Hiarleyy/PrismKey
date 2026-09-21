@@ -118,5 +118,3 @@ Senhas usam campos mascarados e são limpas após gerar chaves ou assinar.
 ```powershell
 .\build-mingw\prismkey.exe verify .\documento.pdf --signature .\documento.sig --key .\chave-publica.pem
 ```
-
-Nunca passe senhas como argumento de linha de comando; a aplicação as solicita de modo interativo.
