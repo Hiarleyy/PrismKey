@@ -44,6 +44,10 @@ build/
 Build/
 build-*/
 
+# Local IDE settings
+.vs/
+.qtcreator/
+
 # CMake generated files
 CMakeFiles/
 CMakeCache.txt
@@ -59,7 +63,18 @@ compile_commands.json
 *.swp
 
 # vcpkg
+vcpkg/
 vcpkg_installed/
+
+# Local agent configuration
+.agents/
+
+# OpenSpec planning artifacts
+openspec/
+
+# Generated cryptographic material
+*.pem
+*.sig
 
 # debug information files
 *.dwo

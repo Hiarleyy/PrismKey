@@ -1,0 +1,12 @@
+{
+    "name": "prismkey",
+    "version-string": "0.1.0",
+    "dependencies": [
+        "openssl",
+        "sqlite3",
+        "nlohmann-json",
+        "spdlog",
+        "gtest",
+        "qtbase"
+    ]
+}
