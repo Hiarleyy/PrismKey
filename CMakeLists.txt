@@ -5,6 +5,7 @@ project(PrismKey VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_AUTORCC ON)
 
 find_package(OpenSSL REQUIRED)
 find_package(GTest CONFIG REQUIRED)
@@ -28,12 +29,17 @@ add_executable(prismkey
 
 target_link_libraries(prismkey PRIVATE prismkey_crypto)
 
-add_executable(prismkey_gui
+add_executable(prismkey_gui WIN32
     src/gui/main.cpp
     src/gui/MainWindow.cpp
+    assets/prismkey.qrc
 )
 
 target_link_libraries(prismkey_gui PRIVATE prismkey_crypto Qt6::Widgets)
+
+if(WIN32)
+    target_sources(prismkey_gui PRIVATE assets/prismkey.rc)
+endif()
 
 if(MSVC)
     target_compile_options(prismkey_crypto PRIVATE /utf-8 /W4)

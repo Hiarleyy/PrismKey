@@ -1,1 +1,0 @@
-Olá Prism, este é um arquivo de teste. Vamos gerar um hash SHA-256 para ele.
