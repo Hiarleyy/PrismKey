@@ -1,0 +1,46 @@
+name: Create Windows release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.8.3"
+          arch: win64_mingw
+          modules: qtsvg
+      - name: Install vcpkg dependencies
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgJsonGlob: "vcpkg.json"
+          runVcpkgInstall: true
+      - name: Configure
+        shell: pwsh
+        run: >
+          cmake -S . -B build-mingw -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+          -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic
+          -DCMAKE_PREFIX_PATH="$env:Qt6_DIR\..\..\.."
+      - name: Build and test
+        shell: pwsh
+        run: |
+          cmake --build build-mingw
+          ctest --test-dir build-mingw --output-on-failure
+      - name: Package
+        shell: pwsh
+        run: .\scripts\package-windows.ps1 -QtRoot "$env:Qt6_DIR\..\.."
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/PrismKey-*-windows-x64.zip
