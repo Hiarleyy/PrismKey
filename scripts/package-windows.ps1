@@ -2,7 +2,7 @@
 param(
     [string]$BuildDirectory = "build-mingw",
     [string]$QtRoot = "C:\Qt\6.11.2\mingw_64",
-    [string]$Version = "0.1.0"
+    [string]$Version = "0.1.1"
 )
 
 $ErrorActionPreference = "Stop"
@@ -29,7 +29,7 @@ Copy-Item -LiteralPath (Join-Path $projectRoot "HELLO_WORLD.txt") -Destination $
 & $deployTool --release --compiler-runtime --no-translations --dir $packagePath $guiSource
 if ($LASTEXITCODE -ne 0) { throw "windeployqt falhou com codigo $LASTEXITCODE" }
 Copy-Item -LiteralPath $guiSource -Destination (Join-Path $packagePath "PrismKey.exe")
-Copy-Item -LiteralPath $cliSource -Destination (Join-Path $packagePath "prismkey.exe")
+Copy-Item -LiteralPath $cliSource -Destination (Join-Path $packagePath "PrismKey-cli.exe")
 
 $opensslDll = Join-Path $buildPath "libcrypto-3-x64.dll"
 if (-not (Test-Path -LiteralPath $opensslDll)) { throw "Dependencia OpenSSL nao encontrada: $opensslDll" }

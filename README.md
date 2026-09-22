@@ -10,9 +10,9 @@
 
 ## Download
 
-Baixe a versao mais recente para Windows em [GitHub Releases](https://github.com/Hiarleyy/PrismKey/releases/latest). O arquivo `PrismKey-0.1.0-windows-x64.zip` e portatil: extraia-o e abra `PrismKey.exe`.
+Baixe a versao mais recente para Windows em [GitHub Releases](https://github.com/Hiarleyy/PrismKey/releases/latest). O arquivo `PrismKey-0.1.1-windows-x64.zip` e portatil: extraia-o e abra `PrismKey.exe`.
 
-O pacote inclui a interface grafica (`PrismKey.exe`), a CLI (`prismkey.exe`) e `HELLO_WORLD.txt`. Mantenha todos os arquivos extraidos juntos. O Windows pode exibir um aviso para executaveis sem assinatura de codigo; baixe somente da pagina oficial de Releases.
+O pacote inclui a interface grafica (`PrismKey.exe`), a CLI (`PrismKey-cli.exe`) e `HELLO_WORLD.txt`. Mantenha todos os arquivos extraidos juntos. O Windows pode exibir um aviso para executaveis sem assinatura de codigo; baixe somente da pagina oficial de Releases.
 
 ## Recursos
 
@@ -25,10 +25,10 @@ O pacote inclui a interface grafica (`PrismKey.exe`), a CLI (`prismkey.exe`) e `
 ## Linha de comando
 
 ```powershell
-.\prismkey.exe hash .\documento.pdf
-.\prismkey.exe keygen --public .\chave-publica.pem --private .\chave-privada.pem
-.\prismkey.exe sign .\documento.pdf --key .\chave-privada.pem --out .\documento.sig
-.\prismkey.exe verify .\documento.pdf --signature .\documento.sig --key .\chave-publica.pem
+.\PrismKey-cli.exe hash .\documento.pdf
+.\PrismKey-cli.exe keygen --public .\chave-publica.pem --private .\chave-privada.pem
+.\PrismKey-cli.exe sign .\documento.pdf --key .\chave-privada.pem --out .\documento.sig
+.\PrismKey-cli.exe verify .\documento.pdf --signature .\documento.sig --key .\chave-publica.pem
 ```
 
 ## Compilar a partir do codigo-fonte
