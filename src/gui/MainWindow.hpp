@@ -10,6 +10,7 @@ class QListWidget;
 class QTabWidget;
 class QDragEnterEvent;
 class QDropEvent;
+class QComboBox;
 
 namespace prismkey::gui {
 
@@ -32,12 +33,15 @@ private:
     QLineEdit* hashFile_ = nullptr;
     QLabel* hashResult_ = nullptr;
     QListWidget* hashResults_ = nullptr;
+    QComboBox* hashAlgorithm_ = nullptr;
 
     QLineEdit* publicKeyOutput_ = nullptr;
     QLineEdit* privateKeyOutput_ = nullptr;
     QLineEdit* keyPassword_ = nullptr;
     QLineEdit* keyPasswordConfirmation_ = nullptr;
     QLabel* keyGenerationResult_ = nullptr;
+    QLineEdit* inspectPublicKey_ = nullptr;
+    QLabel* keyInspectionResult_ = nullptr;
 
     QLineEdit* signFile_ = nullptr;
     QLineEdit* signPrivateKey_ = nullptr;

@@ -12,7 +12,7 @@ namespace {
 using DigestContext = std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)>;
 }
 
-core::Result<std::string> HashService::sha256File(const std::filesystem::path& file) {
+core::Result<std::string> HashService::file(const std::filesystem::path& file, const std::string& algorithm) {
     std::ifstream input(file, std::ios::binary);
     if (!input) {
         return core::Result<std::string>::failure(
@@ -21,7 +21,9 @@ core::Result<std::string> HashService::sha256File(const std::filesystem::path& f
     }
 
     DigestContext context(EVP_MD_CTX_new(), EVP_MD_CTX_free);
-    if (!context || EVP_DigestInit_ex(context.get(), EVP_sha256(), nullptr) != 1) {
+    const EVP_MD* algorithmDigest = EVP_get_digestbyname(algorithm.c_str());
+    if (!algorithmDigest) return core::Result<std::string>::failure(core::ErrorCode::InvalidArgument, "Algoritmo de hash nao suportado.");
+    if (!context || EVP_DigestInit_ex(context.get(), algorithmDigest, nullptr) != 1) {
         return core::Result<std::string>::failure(core::ErrorCode::CryptoError, "Falha ao inicializar o SHA-256.");
     }
 
@@ -48,5 +50,7 @@ core::Result<std::string> HashService::sha256File(const std::filesystem::path& f
     }
     return core::Result<std::string>::success(hexadecimal.str());
 }
+
+core::Result<std::string> HashService::sha256File(const std::filesystem::path& file) { return HashService::file(file, "SHA256"); }
 
 }  // namespace prismkey::crypto

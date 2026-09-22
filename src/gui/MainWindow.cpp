@@ -6,6 +6,7 @@
 #include "crypto/SignatureService.hpp"
 
 #include <QFileDialog>
+#include <QComboBox>
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QListWidget>
@@ -76,7 +77,7 @@ MainWindow::MainWindow() {
 void MainWindow::processHashFiles(const std::vector<std::filesystem::path>& files) {
     hashResult_->clear();
     for (const auto& file : files) {
-        const auto result = crypto::HashService::sha256File(file);
+        const auto result = crypto::HashService::file(file, hashAlgorithm_ ? hashAlgorithm_->currentText().toStdString() : "SHA256");
         const QString message = QString::fromStdWString(file.wstring()) + ": " +
             (result.ok() ? QString::fromStdString(result.value()) : "Erro - " + QString::fromStdString(result.message()));
         if (hashResults_) hashResults_->addItem(message); else hashResult_->setText(message);
@@ -108,8 +109,11 @@ void MainWindow::createHashTab() {
     auto* layout = new QVBoxLayout(tab);
     auto* form = new QFormLayout;
     hashFile_ = pathField(form, "Arquivo:", tab, false);
+    hashAlgorithm_ = new QComboBox(tab);
+    hashAlgorithm_->addItems({"SHA256", "SHA512", "SHA3-256", "BLAKE2b512"});
+    form->addRow("Algoritmo:", hashAlgorithm_);
     layout->addLayout(form);
-    auto* calculate = new QPushButton("Calcular SHA-256", tab);
+    auto* calculate = new QPushButton("Calcular hash", tab);
     layout->addWidget(calculate);
     hashResult_ = new QLabel(tab);
     hashResult_->setWordWrap(true);
@@ -122,9 +126,9 @@ void MainWindow::createHashTab() {
     connect(calculate, &QPushButton::clicked, this, [this] {
         hashResult_->clear();
         if (hashFile_->text().isEmpty()) { setError(hashResult_, "Selecione um arquivo."); return; }
-        const auto result = crypto::HashService::sha256File(toPath(hashFile_));
+        const auto result = crypto::HashService::file(toPath(hashFile_), hashAlgorithm_->currentText().toStdString());
         if (!result.ok()) { setError(hashResult_, QString::fromStdString(result.message())); return; }
-        setSuccess(hashResult_, "SHA-256: " + QString::fromStdString(result.value()));
+        setSuccess(hashResult_, hashAlgorithm_->currentText() + ": " + QString::fromStdString(result.value()));
     });
 }
 
@@ -141,6 +145,12 @@ void MainWindow::createKeyGenerationTab() {
     keyPasswordConfirmation_->setEchoMode(QLineEdit::Password);
     form->addRow("Confirmar senha:", keyPasswordConfirmation_);
     layout->addLayout(form);
+    inspectPublicKey_ = pathField(form, "Inspecionar chave publica:", tab, false, "Chaves PEM (*.pem)");
+    auto* inspect = new QPushButton("Exibir detalhes da chave", tab);
+    layout->addWidget(inspect);
+    keyInspectionResult_ = new QLabel(tab);
+    keyInspectionResult_->setWordWrap(true);
+    layout->addWidget(keyInspectionResult_);
     auto* generate = new QPushButton("Gerar chaves RSA", tab);
     layout->addWidget(generate);
     keyGenerationResult_ = new QLabel(tab);
@@ -162,6 +172,12 @@ void MainWindow::createKeyGenerationTab() {
         }
         keyPassword_->clear();
         keyPasswordConfirmation_->clear();
+    });
+    connect(inspect, &QPushButton::clicked, this, [this] {
+        if (inspectPublicKey_->text().isEmpty()) { setError(keyInspectionResult_, "Selecione uma chave publica."); return; }
+        const auto details = crypto::KeyService::inspectPublicKey(toPath(inspectPublicKey_));
+        if (!details.ok()) { setError(keyInspectionResult_, QString::fromStdString(details.message())); return; }
+        setSuccess(keyInspectionResult_, QString("Algoritmo: %1 | RSA: %2 bits | Fingerprint SHA-256: %3").arg(QString::fromStdString(details.value().algorithm)).arg(details.value().bits).arg(QString::fromStdString(details.value().fingerprint)));
     });
 }
 

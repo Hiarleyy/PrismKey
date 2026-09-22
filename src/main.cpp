@@ -17,7 +17,7 @@
 namespace {
 void printUsage() {
     std::cerr << "Uso:\n"
-              << "  prismkey hash <arquivo>\n"
+              << "  prismkey hash <arquivo> [--algorithm SHA256|SHA512|SHA3-256|BLAKE2b512]\n"
               << "  prismkey keygen --public <arquivo.pem> --private <arquivo.pem>\n"
               << "  prismkey sign <arquivo> --key <privada.pem> --out <assinatura.sig>\n"
               << "  prismkey verify <arquivo> --signature <assinatura.sig> --key <publica.pem>\n";
@@ -70,10 +70,11 @@ int main(int argc, char* argv[]) {
     if (arguments.empty()) { printUsage(); return 1; }
     const std::string& command = arguments.front();
     if (command == "hash") {
-        if (arguments.size() != 2) { printUsage(); return 1; }
-        const auto result = prismkey::crypto::HashService::sha256File(arguments[1]);
+        if (arguments.size() != 2 && arguments.size() != 4) { printUsage(); return 1; }
+        const auto algorithm = optionValue(arguments, "--algorithm").value_or("SHA256");
+        const auto result = prismkey::crypto::HashService::file(arguments[1], algorithm);
         if (!result.ok()) { std::cerr << "Erro: " << result.message() << '\n'; return 1; }
-        std::cout << "SHA-256: " << result.value() << '\n';
+        std::cout << algorithm << ": " << result.value() << '\n';
         return 0;
     }
     if (command == "keygen") {

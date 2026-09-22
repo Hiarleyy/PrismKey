@@ -4,6 +4,10 @@
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
+#include <openssl/sha.h>
+#include <fstream>
+#include <iomanip>
+#include <sstream>
 
 namespace prismkey::crypto {
 namespace {
@@ -12,6 +16,16 @@ using Key = std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)>;
 using Bio = std::unique_ptr<BIO, decltype(&BIO_free_all)>;
 
 bool isRsa(const EVP_PKEY* key) { return key != nullptr && EVP_PKEY_base_id(key) == EVP_PKEY_RSA; }
+}
+
+core::Result<PublicKeyDetails> KeyService::inspectPublicKey(const std::filesystem::path& publicKey) {
+    Bio bio(BIO_new_file(publicKey.string().c_str(), "rb"), BIO_free_all);
+    Key key(bio ? PEM_read_bio_PUBKEY(bio.get(), nullptr, nullptr, nullptr) : nullptr, EVP_PKEY_free);
+    if (!key || !isRsa(key.get())) return core::Result<PublicKeyDetails>::failure(core::ErrorCode::InvalidKey, "Chave publica RSA invalida.");
+    std::ifstream input(publicKey, std::ios::binary); std::string bytes((std::istreambuf_iterator<char>(input)), {});
+    unsigned char digest[SHA256_DIGEST_LENGTH]; SHA256(reinterpret_cast<const unsigned char*>(bytes.data()), bytes.size(), digest);
+    std::ostringstream fingerprint; fingerprint << std::hex << std::setfill('0'); for (auto byte : digest) fingerprint << std::setw(2) << static_cast<unsigned>(byte);
+    return core::Result<PublicKeyDetails>::success({"RSA", EVP_PKEY_bits(key.get()), fingerprint.str()});
 }
 
 core::Result<void> KeyService::generateRsaKeyPair(const std::filesystem::path& publicKey,
