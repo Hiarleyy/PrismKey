@@ -1,138 +1,57 @@
-
 <p align="center">
   <img src="assets/icons/prismkey.png" alt="Logo do PrismKey" width="170">
-  <h1 align="center">PrismKey</h1>
 </p>
+
+<h1 align="center">PrismKey</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.1.0-2f80ed?style=flat-square" alt="Versão 0.1.0">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-4caf50?style=flat-square" alt="Licença MIT"></a>
-  <img src="https://img.shields.io/badge/platform-Windows-0078d4?style=flat-square" alt="Plataforma Windows">
-  <img src="https://img.shields.io/badge/C%2B%2B-20-00599c?style=flat-square" alt="C++20">
-  <img src="https://img.shields.io/badge/Qt-6-41cd52?style=flat-square" alt="Qt 6">
+  Aplicacao Windows para calcular hashes SHA-256, gerar chaves RSA, assinar arquivos e verificar assinaturas digitais.
 </p>
 
-<p align="center">
-  Aplicação local para calcular hashes SHA-256, gerar chaves RSA, assinar arquivos e verificar assinaturas digitais.
-</p>
+## Download
 
-Aplicação desktop e linha de comando para calcular hashes SHA-256, gerar chaves RSA, assinar arquivos e verificar assinaturas digitais.
-  Aplicação local para calcular hashes SHA-256, gerar chaves RSA, assinar arquivos e verificar assinaturas digitais.
-</p>
+Baixe a versao mais recente para Windows em [GitHub Releases](https://github.com/Hiarleyy/PrismKey/releases/latest). O arquivo `PrismKey-0.1.0-windows-x64.zip` e portatil: extraia-o e abra `PrismKey.exe`.
+
+O pacote inclui a interface grafica (`PrismKey.exe`), a CLI (`prismkey.exe`) e `HELLO_WORLD.txt`. Mantenha todos os arquivos extraidos juntos. O Windows pode exibir um aviso para executaveis sem assinatura de codigo; baixe somente da pagina oficial de Releases.
 
 ## Recursos
 
 - Hash SHA-256 de arquivos
-- Geração de chaves RSA protegidas por senha
-- Assinatura digital RSA-PSS/SHA-256 e verificação de assinaturas
-- Interface gráfica Qt: **Hash**, **Gerar chaves**, **Assinar** e **Verificar**
-- CLI `prismkey` independente da interface gráfica
+- Geracao de chaves RSA protegidas por senha
+- Assinatura digital RSA-PSS/SHA-256 e verificacao de assinaturas
+- Interface grafica Qt: **Hash**, **Gerar chaves**, **Assinar** e **Verificar**
+- CLI `prismkey` independente da interface grafica
 
-## Pré-requisitos
+## Linha de comando
 
-- CMake 3.21 ou superior
-- Compilador C++20
-- Qt 6 Widgets
-- vcpkg
+```powershell
+.\prismkey.exe hash .\documento.pdf
+.\prismkey.exe keygen --public .\chave-publica.pem --private .\chave-privada.pem
+.\prismkey.exe sign .\documento.pdf --key .\chave-privada.pem --out .\documento.sig
+.\prismkey.exe verify .\documento.pdf --signature .\documento.sig --key .\chave-publica.pem
+```
 
-O projeto foi configurado com o kit **Qt 6 MinGW 64-bit**. O Qt e as dependências do vcpkg devem usar o mesmo compilador.
+## Compilar a partir do codigo-fonte
 
-## Configuração
-
-### 1. Dependências
-
-Na raiz do projeto, instale as dependências para o kit Qt MinGW:
+Requisitos: CMake 3.21+, compilador C++20, Qt 6 Widgets e vcpkg. Qt e vcpkg devem usar o mesmo compilador.
 
 ```powershell
 .\vcpkg\vcpkg.exe install --triplet x64-mingw-dynamic
-```
-
-### 2. Caminho do Qt
-
-No Qt Creator, abra **Edit > Preferences > Kits**, selecione o kit Desktop MinGW 64-bit e copie o caminho do Qt. Exemplo:
-
-```text
-C:\Qt\6.11.2\mingw_64
-```
-
-### 3. Configurar o CMake
-
-Substitua o caminho de `CMAKE_PREFIX_PATH` pelo diretório do Qt instalado:
-
-```powershell
 cmake -S . -B build-mingw -G Ninja `
-  -DCMAKE_BUILD_TYPE=Debug `
+  -DCMAKE_BUILD_TYPE=Release `
   -DCMAKE_TOOLCHAIN_FILE=E:\PrismKey\vcpkg\scripts\buildsystems\vcpkg.cmake `
   -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic `
   -DCMAKE_PREFIX_PATH="C:\Qt\6.11.2\mingw_64"
-```
-
-## Compilar
-
-Compile a CLI e a interface gráfica:
-
-```powershell
-cmake --build build-mingw --target prismkey prismkey_gui
-```
-
-Para compilar e executar os testes:
-
-```powershell
 cmake --build build-mingw
 ctest --test-dir build-mingw --output-on-failure
 ```
 
-## Executar
-
-### Interface gráfica
+Para gerar o ZIP distribuivel localmente:
 
 ```powershell
-.\build-mingw\prismkey_gui.exe
+.\scripts\package-windows.ps1
 ```
 
-Se houver erro de DLL na primeira execução fora do Qt Creator, distribua as dependências do Qt e do MinGW:
+## Licenca
 
-```powershell
-& "C:\Qt\6.11.2\mingw_64\bin\windeployqt.exe" --compiler-runtime --no-translations .\build-mingw\prismkey_gui.exe
-```
-
-### Linha de comando
-
-```powershell
-.\build-mingw\prismkey.exe
-```
-
-## Guia da interface gráfica
-
-1. **Hash**: selecione um arquivo e clique em **Calcular SHA-256**.
-2. **Gerar chaves**: escolha destinos diferentes para as chaves pública e privada, informe e confirme a senha, depois clique em **Gerar chaves RSA**.
-3. **Assinar**: escolha o arquivo, a chave privada e o destino da assinatura (por exemplo, `documento.sig`), informe a senha e clique em **Assinar arquivo**. O `.sig` é criado no destino escolhido.
-4. **Verificar**: informe o arquivo original, a assinatura `.sig` e a chave pública; clique em **Verificar assinatura**.
-
-Senhas usam campos mascarados e são limpas após gerar chaves ou assinar.
-
-## Guia da CLI
-
-### Calcular hash
-
-```powershell
-.\build-mingw\prismkey.exe hash .\documento.pdf
-```
-
-### Gerar chaves
-
-```powershell
-.\build-mingw\prismkey.exe keygen --public .\chave-publica.pem --private .\chave-privada.pem
-```
-
-### Assinar
-
-```powershell
-.\build-mingw\prismkey.exe sign .\documento.pdf --key .\chave-privada.pem --out .\documento.sig
-```
-
-### Verificar
-
-```powershell
-.\build-mingw\prismkey.exe verify .\documento.pdf --signature .\documento.sig --key .\chave-publica.pem
-```
+[MIT](LICENSE)
