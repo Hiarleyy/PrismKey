@@ -1,10 +1,16 @@
 #include "MainWindow.hpp"
 
 #include "crypto/HashService.hpp"
+#include "crypto/BatchService.hpp"
 #include "crypto/KeyService.hpp"
 #include "crypto/SignatureService.hpp"
 
 #include <QFileDialog>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QListWidget>
+#include <QMessageBox>
+#include <QMimeData>
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -56,13 +62,45 @@ void setSuccess(QLabel* label, const QString& message) {
 MainWindow::MainWindow() {
     setWindowTitle("PrismKey");
     resize(720, 420);
+    setAcceptDrops(true);
 
     auto* tabs = new QTabWidget(this);
+    tabs_ = tabs;
     setCentralWidget(tabs);
     createHashTab();
     createKeyGenerationTab();
     createSignTab();
     createVerifyTab();
+}
+
+void MainWindow::processHashFiles(const std::vector<std::filesystem::path>& files) {
+    hashResult_->clear();
+    for (const auto& file : files) {
+        const auto result = crypto::HashService::sha256File(file);
+        const QString message = QString::fromStdWString(file.wstring()) + ": " +
+            (result.ok() ? QString::fromStdString(result.value()) : "Erro - " + QString::fromStdString(result.message()));
+        if (hashResults_) hashResults_->addItem(message); else hashResult_->setText(message);
+    }
+}
+
+void MainWindow::refreshSignQueue() {
+    if (!signQueue_) return;
+    signQueue_->clear();
+    for (const auto& file : signFiles_) signQueue_->addItem(QString::fromStdWString(file.wstring()));
+}
+
+void MainWindow::dragEnterEvent(QDragEnterEvent* event) {
+    if (event->mimeData()->hasUrls()) event->acceptProposedAction();
+}
+
+void MainWindow::dropEvent(QDropEvent* event) {
+    std::vector<std::filesystem::path> paths;
+    for (const auto& url : event->mimeData()->urls()) if (url.isLocalFile()) paths.emplace_back(url.toLocalFile().toStdWString());
+    const auto files = crypto::BatchService::regularFiles(paths);
+    if (files.empty()) { setError(tabs_ && tabs_->currentIndex() == 2 ? signResult_ : hashResult_, "Solte arquivos locais regulares."); return; }
+    if (tabs_ && tabs_->currentIndex() == 2) { signFiles_.insert(signFiles_.end(), files.begin(), files.end()); refreshSignQueue(); setSuccess(signResult_, "Arquivos adicionados a fila."); }
+    else processHashFiles(files);
+    event->acceptProposedAction();
 }
 
 void MainWindow::createHashTab() {
@@ -76,6 +114,8 @@ void MainWindow::createHashTab() {
     hashResult_ = new QLabel(tab);
     hashResult_->setWordWrap(true);
     layout->addWidget(hashResult_);
+    hashResults_ = new QListWidget(tab);
+    layout->addWidget(hashResults_);
     layout->addStretch();
     static_cast<QTabWidget*>(centralWidget())->addTab(tab, "Hash");
 
@@ -136,6 +176,8 @@ void MainWindow::createSignTab() {
     signPassword_->setEchoMode(QLineEdit::Password);
     form->addRow("Senha:", signPassword_);
     layout->addLayout(form);
+    signQueue_ = new QListWidget(tab);
+    layout->addWidget(signQueue_);
     auto* sign = new QPushButton("Assinar arquivo", tab);
     layout->addWidget(sign);
     signResult_ = new QLabel(tab);
@@ -147,12 +189,17 @@ void MainWindow::createSignTab() {
     connect(sign, &QPushButton::clicked, this, [this] {
         signResult_->clear();
         const QString password = signPassword_->text();
-        if (signFile_->text().isEmpty() || signPrivateKey_->text().isEmpty() || signOutput_->text().isEmpty() || password.isEmpty()) {
+        if (signPrivateKey_->text().isEmpty() || password.isEmpty() || (signFiles_.empty() && (signFile_->text().isEmpty() || signOutput_->text().isEmpty()))) {
             setError(signResult_, "Informe o arquivo, a chave privada, o destino e a senha.");
         } else {
-            const auto result = crypto::SignatureService::signFile(toPath(signFile_), toPath(signPrivateKey_), toPath(signOutput_), password.toStdString());
-            if (result.ok()) setSuccess(signResult_, "Arquivo assinado com sucesso.");
-            else setError(signResult_, QString::fromStdString(result.message()));
+            if (signFiles_.empty()) {
+                const auto result = crypto::SignatureService::signFile(toPath(signFile_), toPath(signPrivateKey_), toPath(signOutput_), password.toStdString());
+                if (result.ok()) setSuccess(signResult_, "Arquivo assinado com sucesso."); else setError(signResult_, QString::fromStdString(result.message()));
+            } else {
+                bool conflict = false; for (const auto& file : signFiles_) conflict = conflict || std::filesystem::exists(crypto::BatchService::signaturePath(file));
+                if (conflict && QMessageBox::question(this, "Substituir assinaturas", "Ha assinaturas existentes. Substitui-las?") != QMessageBox::Yes) { setError(signResult_, "Lote cancelado."); }
+                else { const auto results = crypto::BatchService::signFiles(signFiles_, toPath(signPrivateKey_), password.toStdString()); int ok = 0; for (const auto& item : results) ok += item.ok; setSuccess(signResult_, QString("Lote concluido: %1/%2 assinados.").arg(ok).arg(results.size())); }
+            }
         }
         signPassword_->clear();
     });
@@ -164,6 +211,8 @@ void MainWindow::createVerifyTab() {
     auto* form = new QFormLayout;
     verifyFile_ = pathField(form, "Arquivo:", tab, false);
     verifySignature_ = pathField(form, "Assinatura:", tab, false, "Assinaturas (*.sig)");
+    verifyFolder_ = new QLineEdit(tab);
+    form->addRow("Pasta para lote:", verifyFolder_);
     verifyPublicKey_ = pathField(form, "Chave pública:", tab, false, "Chaves PEM (*.pem)");
     layout->addLayout(form);
     auto* verify = new QPushButton("Verificar assinatura", tab);

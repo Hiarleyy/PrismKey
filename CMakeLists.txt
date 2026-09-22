@@ -14,7 +14,9 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
 include(CTest)
 
 add_library(prismkey_crypto
+    src/core/ProjectStorage.cpp
     src/crypto/HashService.cpp
+    src/crypto/BatchService.cpp
     src/crypto/KeyService.cpp
     src/crypto/SignatureService.cpp
 )
