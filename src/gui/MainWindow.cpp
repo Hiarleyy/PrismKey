@@ -18,6 +18,7 @@
 #include <filesystem>
 
 #include "crypto/BatchService.hpp"
+#include "crypto/DownloadService.hpp"
 #include "crypto/HashService.hpp"
 #include "crypto/KeyService.hpp"
 #include "crypto/SignatureService.hpp"
@@ -70,6 +71,7 @@ MainWindow::MainWindow() {
     createKeyGenerationTab();
     createSignTab();
     createVerifyTab();
+    createDownloadTab();
 }
 
 void MainWindow::processHashFiles(const std::vector<std::filesystem::path>& files) {
@@ -155,6 +157,9 @@ void MainWindow::createKeyGenerationTab() {
     auto* form = new QFormLayout;
     publicKeyOutput_ = pathField(form, "Chave pública:", tab, true, "Chaves PEM (*.pem)");
     privateKeyOutput_ = pathField(form, "Chave privada:", tab, true, "Chaves PEM (*.pem)");
+    keyAlgorithm_ = new QComboBox(tab);
+    keyAlgorithm_->addItems({"RSA", "Ed25519"});
+    form->addRow("Algoritmo:", keyAlgorithm_);
     keyPassword_ = new QLineEdit(tab);
     keyPassword_->setEchoMode(QLineEdit::Password);
     form->addRow("Senha:", keyPassword_);
@@ -168,7 +173,7 @@ void MainWindow::createKeyGenerationTab() {
     keyInspectionResult_ = new QLabel(tab);
     keyInspectionResult_->setWordWrap(true);
     layout->addWidget(keyInspectionResult_);
-    auto* generate = new QPushButton("Gerar chaves RSA", tab);
+    auto* generate = new QPushButton("Gerar chaves", tab);
     layout->addWidget(generate);
     keyGenerationResult_ = new QLabel(tab);
     keyGenerationResult_->setWordWrap(true);
@@ -184,10 +189,12 @@ void MainWindow::createKeyGenerationTab() {
             password != confirmation) {
             setError(keyGenerationResult_, "Informe destinos diferentes e senhas iguais, não vazias.");
         } else {
-            const auto result = crypto::KeyService::generateRsaKeyPair(
-                toPath(publicKeyOutput_), toPath(privateKeyOutput_), password.toStdString());
+            const auto algorithm = keyAlgorithm_->currentText() == "Ed25519" ? crypto::KeyAlgorithm::Ed25519
+                                                                               : crypto::KeyAlgorithm::Rsa;
+            const auto result = crypto::KeyService::generateKeyPair(toPath(publicKeyOutput_), toPath(privateKeyOutput_),
+                                                                     password.toStdString(), algorithm);
             if (result.ok())
-                setSuccess(keyGenerationResult_, "Par de chaves RSA gerado com sucesso.");
+                setSuccess(keyGenerationResult_, "Par de chaves " + keyAlgorithm_->currentText() + " gerado com sucesso.");
             else
                 setError(keyGenerationResult_, QString::fromStdString(result.message()));
         }
@@ -291,12 +298,53 @@ void MainWindow::createVerifyTab() {
             setError(verifyResult_, "Informe o arquivo, a assinatura e a chave pública.");
             return;
         }
-        const auto result = crypto::SignatureService::verifyFile(toPath(verifyFile_), toPath(verifySignature_),
-                                                                 toPath(verifyPublicKey_));
-        if (result.ok())
-            setSuccess(verifyResult_, "Assinatura válida.");
-        else
+        const auto result = crypto::SignatureService::verifyFileDetails(toPath(verifyFile_), toPath(verifySignature_),
+                                                                        toPath(verifyPublicKey_));
+        if (result.ok()) {
+            QString message = "Assinatura válida. Algoritmo: " + QString::fromStdString(result.value().algorithm);
+            message += result.value().legacy ? " | Assinatura legada sem timestamp"
+                                              : " | Timestamp UTC: " + QString::fromStdString(result.value().timestampUtc);
+            setSuccess(verifyResult_, message);
+        } else
             setError(verifyResult_, "Assinatura inválida ou não foi possível verificar os arquivos.");
+    });
+}
+
+void MainWindow::createDownloadTab() {
+    auto* tab = new QWidget(this);
+    auto* layout = new QVBoxLayout(tab);
+    auto* form = new QFormLayout;
+    downloadUrl_ = new QLineEdit(tab);
+    downloadUrl_->setPlaceholderText("https://exemplo.com/arquivo");
+    form->addRow("URL HTTPS:", downloadUrl_);
+    downloadOutput_ = pathField(form, "Destino:", tab, true);
+    downloadHash_ = new QLineEdit(tab);
+    form->addRow("Hash esperado:", downloadHash_);
+    downloadAlgorithm_ = new QComboBox(tab);
+    downloadAlgorithm_->addItems({"SHA-256", "SHA-512", "SHA3-256", "BLAKE2b-512"});
+    form->addRow("Algoritmo:", downloadAlgorithm_);
+    layout->addLayout(form);
+    auto* download = new QPushButton("Baixar e validar", tab);
+    layout->addWidget(download);
+    downloadResult_ = new QLabel(tab);
+    downloadResult_->setWordWrap(true);
+    layout->addWidget(downloadResult_);
+    layout->addStretch();
+    static_cast<QTabWidget*>(centralWidget())->addTab(tab, "Download");
+
+    connect(download, &QPushButton::clicked, this, [this] {
+        downloadResult_->clear();
+        if (downloadUrl_->text().isEmpty() || downloadOutput_->text().isEmpty() || downloadHash_->text().isEmpty()) {
+            setError(downloadResult_, "Informe URL HTTPS, destino e hash esperado.");
+            return;
+        }
+        const auto result = crypto::DownloadService::download(downloadUrl_->text().toStdString(), toPath(downloadOutput_),
+                                                              downloadHash_->text().toStdString(),
+                                                              downloadAlgorithm_->currentText().toStdString());
+        if (result.ok())
+            setSuccess(downloadResult_, "Download e validação concluídos com sucesso.");
+        else
+            setError(downloadResult_, QString::fromStdString(result.message()));
     });
 }
 

@@ -5,7 +5,7 @@
 <h1 align="center">PrismKey</h1>
 
 <p align="center">
-  Aplicacao Windows para calcular hashes SHA-256, gerar chaves RSA, assinar arquivos e verificar assinaturas digitais.
+  Aplicacao Windows para calcular hashes, gerar chaves RSA ou Ed25519, assinar arquivos e validar downloads HTTPS.
 </p>
 
 ## Download
@@ -16,20 +16,24 @@ O pacote inclui a interface grafica (`PrismKey.exe`), a CLI (`PrismKey-cli.exe`)
 
 ## Recursos
 
-- Hash SHA-256 de arquivos
-- Geracao de chaves RSA protegidas por senha
-- Assinatura digital RSA-PSS/SHA-256 e verificacao de assinaturas
-- Interface grafica Qt: **Hash**, **Gerar chaves**, **Assinar** e **Verificar**
+- Hashes SHA-256, SHA-512, SHA3-256 e BLAKE2b-512
+- Geracao de chaves RSA ou Ed25519 protegidas por senha
+- Assinatura digital RSA-PSS/SHA-256 ou Ed25519, com registro local em UTC
+- Download HTTPS validado por hash, sem publicar arquivos que falhem na validacao
+- Interface grafica Qt: **Hash**, **Gerar chaves**, **Assinar**, **Verificar** e **Download**
 - CLI `prismkey` independente da interface grafica
 
 ## Linha de comando
 
 ```powershell
 .\PrismKey-cli.exe hash .\documento.pdf
-.\PrismKey-cli.exe keygen --public .\chave-publica.pem --private .\chave-privada.pem
+.\PrismKey-cli.exe keygen --algorithm ED25519 --public .\chave-publica.pem --private .\chave-privada.pem
 .\PrismKey-cli.exe sign .\documento.pdf --key .\chave-privada.pem --out .\documento.sig
 .\PrismKey-cli.exe verify .\documento.pdf --signature .\documento.sig --key .\chave-publica.pem
+.\PrismKey-cli.exe download https://exemplo.com/arquivo.zip --out .\arquivo.zip --hash <hash-em-hexadecimal> --algorithm SHA-256
 ```
+
+O timestamp apresentado em `verify` e um registro local em UTC autenticado pela assinatura. Ele nao e uma certificacao de tempo por terceiros (TSA).
 
 ## Compilar a partir do codigo-fonte
 

@@ -131,7 +131,10 @@ core::Result<SignatureDetails> SignatureService::verifyFileDetails(const std::fi
         return core::Result<SignatureDetails>::failure(sig.errorCode(),
                                                        "Nao foi possivel ler o arquivo de assinatura.");
     auto& v = sig.value();
-    if (v.size() < 11 || !std::equal(magic, magic + 8, v.begin())) {
+    const bool hasEnvelopeMagic = v.size() >= sizeof(magic) && std::equal(magic, magic + sizeof(magic), v.begin());
+    if (hasEnvelopeMagic && v.size() < 11)
+        return core::Result<SignatureDetails>::failure(core::ErrorCode::InvalidSignature, "A assinatura e invalida.");
+    if (!hasEnvelopeMagic) {
         if (!rsa(k.get()))
             return core::Result<SignatureDetails>::failure(core::ErrorCode::InvalidSignature,
                                                            "Assinatura legada requer chave RSA.");

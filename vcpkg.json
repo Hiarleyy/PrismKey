@@ -3,6 +3,13 @@
     "version-string": "0.1.1",
     "dependencies": [
         "openssl",
+        {
+            "name": "curl",
+            "default-features": false,
+            "features": [
+                "openssl"
+            ]
+        },
         "sqlite3",
         "nlohmann-json",
         "spdlog",

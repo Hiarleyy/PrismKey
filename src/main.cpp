@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "crypto/HashService.hpp"
+#include "crypto/DownloadService.hpp"
 #include "crypto/KeyService.hpp"
 #include "crypto/SignatureService.hpp"
 
@@ -20,7 +21,9 @@ void printUsage() {
               << "  prismkey hash <arquivo> [--algorithm SHA256|SHA512|SHA3-256|BLAKE2b512]\n"
               << "  prismkey keygen [--algorithm RSA|ED25519] --public <arquivo.pem> --private <arquivo.pem>\n"
               << "  prismkey sign <arquivo> --key <privada.pem> --out <assinatura.sig>\n"
-              << "  prismkey verify <arquivo> --signature <assinatura.sig> --key <publica.pem>\n";
+              << "  prismkey verify <arquivo> --signature <assinatura.sig> --key <publica.pem>\n"
+              << "  prismkey download <url-https> --out <arquivo> --hash <hash-esperado> "
+                 "--algorithm SHA-256|SHA-512|SHA3-256|BLAKE2b-512\n";
 }
 
 std::optional<std::string> optionValue(const std::vector<std::string>& arguments, const std::string& option) {
@@ -113,6 +116,21 @@ int main(int argc, char* argv[]) {
         return report(prismkey::crypto::KeyService::generateKeyPair(*publicKey, *privateKey, *password, algorithm),
                       "Par de chaves gerado com sucesso.");
     }
+    if (command == "download") {
+        if (arguments.size() != 8) {
+            printUsage();
+            return 1;
+        }
+        const auto output = optionValue(arguments, "--out");
+        const auto hash = optionValue(arguments, "--hash");
+        const auto algorithm = optionValue(arguments, "--algorithm");
+        if (!output || !hash || !algorithm) {
+            printUsage();
+            return 1;
+        }
+        return report(prismkey::crypto::DownloadService::download(arguments[1], *output, *hash, *algorithm),
+                      "Download e validacao concluidos com sucesso.");
+    }
     if (command == "sign") {
         if (arguments.size() < 2) {
             printUsage();
@@ -155,8 +173,6 @@ int main(int argc, char* argv[]) {
             std::cout << " | Timestamp UTC: " << details.value().timestampUtc;
         std::cout << '\n';
         return 0;
-        return report(prismkey::crypto::SignatureService::verifyFile(arguments[1], *signature, *key),
-                      "Assinatura válida.");
     }
     std::cerr << "Erro: comando desconhecido.\n";
     printUsage();

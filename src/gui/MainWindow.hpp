@@ -27,6 +27,7 @@ class MainWindow final : public QMainWindow {
     void createKeyGenerationTab();
     void createSignTab();
     void createVerifyTab();
+    void createDownloadTab();
     void processHashFiles(const std::vector<std::filesystem::path>& files);
     void refreshSignQueue();
 
@@ -39,6 +40,7 @@ class MainWindow final : public QMainWindow {
     QLineEdit* privateKeyOutput_ = nullptr;
     QLineEdit* keyPassword_ = nullptr;
     QLineEdit* keyPasswordConfirmation_ = nullptr;
+    QComboBox* keyAlgorithm_ = nullptr;
     QLabel* keyGenerationResult_ = nullptr;
     QLineEdit* inspectPublicKey_ = nullptr;
     QLabel* keyInspectionResult_ = nullptr;
@@ -57,6 +59,11 @@ class MainWindow final : public QMainWindow {
     QLabel* verifyResult_ = nullptr;
     QLineEdit* verifyFolder_ = nullptr;
     QListWidget* verifyResults_ = nullptr;
+    QLineEdit* downloadUrl_ = nullptr;
+    QLineEdit* downloadOutput_ = nullptr;
+    QLineEdit* downloadHash_ = nullptr;
+    QComboBox* downloadAlgorithm_ = nullptr;
+    QLabel* downloadResult_ = nullptr;
     QTabWidget* tabs_ = nullptr;
 };
 

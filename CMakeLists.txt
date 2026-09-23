@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_AUTORCC ON)
 
 find_package(OpenSSL REQUIRED)
+find_package(CURL REQUIRED)
 find_package(GTest CONFIG REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
@@ -17,13 +18,14 @@ add_library(prismkey_crypto
     src/core/ProjectStorage.cpp
     src/crypto/HashService.cpp
     src/crypto/BatchService.cpp
+    src/crypto/DownloadService.cpp
     src/crypto/KeyService.cpp
     src/crypto/SignatureService.cpp
 )
 
 target_include_directories(prismkey_crypto PUBLIC include)
 
-target_link_libraries(prismkey_crypto PUBLIC OpenSSL::Crypto)
+target_link_libraries(prismkey_crypto PUBLIC OpenSSL::Crypto CURL::libcurl)
 
 add_executable(prismkey
     src/main.cpp
@@ -51,7 +53,10 @@ endif()
 
 if(BUILD_TESTING)
     add_executable(prismkey_tests tests/CryptoServicesTests.cpp)
-    target_link_libraries(prismkey_tests PRIVATE prismkey_crypto GTest::gtest_main)
+    target_link_libraries(prismkey_tests PRIVATE prismkey_crypto GTest::gtest_main OpenSSL::SSL)
+    if(WIN32)
+        target_link_libraries(prismkey_tests PRIVATE ws2_32)
+    endif()
     include(GoogleTest)
     gtest_discover_tests(prismkey_tests)
 endif()
