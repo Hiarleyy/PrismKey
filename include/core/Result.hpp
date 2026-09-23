@@ -18,11 +18,9 @@ enum class ErrorCode {
 
 template <typename T>
 class Result {
-public:
+   public:
     static Result success(T value) { return Result(std::move(value)); }
-    static Result failure(ErrorCode code, std::string message) {
-        return Result(code, std::move(message));
-    }
+    static Result failure(ErrorCode code, std::string message) { return Result(code, std::move(message)); }
 
     [[nodiscard]] bool ok() const noexcept { return ok_; }
     [[nodiscard]] const T& value() const { return value_; }
@@ -30,7 +28,7 @@ public:
     [[nodiscard]] ErrorCode errorCode() const noexcept { return errorCode_; }
     [[nodiscard]] const std::string& message() const noexcept { return message_; }
 
-private:
+   private:
     explicit Result(T value) : ok_(true), value_(std::move(value)) {}
     Result(ErrorCode code, std::string message) : ok_(false), errorCode_(code), message_(std::move(message)) {}
 
@@ -42,7 +40,7 @@ private:
 
 template <>
 class Result<void> {
-public:
+   public:
     static Result success() { return Result(true, ErrorCode::CryptoError, {}); }
     static Result failure(ErrorCode code, std::string message) { return Result(false, code, std::move(message)); }
 
@@ -50,7 +48,7 @@ public:
     [[nodiscard]] ErrorCode errorCode() const noexcept { return errorCode_; }
     [[nodiscard]] const std::string& message() const noexcept { return message_; }
 
-private:
+   private:
     Result(bool ok, ErrorCode code, std::string message) : ok_(ok), errorCode_(code), message_(std::move(message)) {}
 
     bool ok_;

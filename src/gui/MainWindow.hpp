@@ -15,14 +15,14 @@ class QComboBox;
 namespace prismkey::gui {
 
 class MainWindow final : public QMainWindow {
-public:
+   public:
     MainWindow();
 
-protected:
+   protected:
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dropEvent(QDropEvent* event) override;
 
-private:
+   private:
     void createHashTab();
     void createKeyGenerationTab();
     void createSignTab();

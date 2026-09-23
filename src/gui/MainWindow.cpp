@@ -1,36 +1,34 @@
 #include "MainWindow.hpp"
 
-#include "crypto/HashService.hpp"
-#include "crypto/BatchService.hpp"
-#include "crypto/KeyService.hpp"
-#include "crypto/SignatureService.hpp"
-
-#include <QFileDialog>
 #include <QComboBox>
 #include <QDragEnterEvent>
 #include <QDropEvent>
-#include <QListWidget>
-#include <QMessageBox>
-#include <QMimeData>
+#include <QFileDialog>
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QListWidget>
+#include <QMessageBox>
+#include <QMimeData>
 #include <QPushButton>
 #include <QTabWidget>
 #include <QVBoxLayout>
 #include <QWidget>
-
 #include <filesystem>
+
+#include "crypto/BatchService.hpp"
+#include "crypto/HashService.hpp"
+#include "crypto/KeyService.hpp"
+#include "crypto/SignatureService.hpp"
 
 namespace prismkey::gui {
 namespace {
 
-std::filesystem::path toPath(const QLineEdit* field) {
-    return std::filesystem::path(field->text().toStdWString());
-}
+std::filesystem::path toPath(const QLineEdit* field) { return std::filesystem::path(field->text().toStdWString()); }
 
-QLineEdit* pathField(QFormLayout* layout, const QString& label, QWidget* parent, bool save, const QString& filter = {}) {
+QLineEdit* pathField(QFormLayout* layout, const QString& label, QWidget* parent, bool save,
+                     const QString& filter = {}) {
     auto* field = new QLineEdit(parent);
     auto* browse = new QPushButton("Procurar...", parent);
     auto* row = new QWidget(parent);
@@ -40,9 +38,9 @@ QLineEdit* pathField(QFormLayout* layout, const QString& label, QWidget* parent,
     rowLayout->addWidget(browse);
     layout->addRow(label, row);
     QObject::connect(browse, &QPushButton::clicked, parent, [parent, field, save, filter] {
-        const QString selected = save
-            ? QFileDialog::getSaveFileName(parent, "Selecionar destino", field->text(), filter)
-            : QFileDialog::getOpenFileName(parent, "Selecionar arquivo", field->text(), filter);
+        const QString selected =
+            save ? QFileDialog::getSaveFileName(parent, "Selecionar destino", field->text(), filter)
+                 : QFileDialog::getOpenFileName(parent, "Selecionar arquivo", field->text(), filter);
         if (!selected.isEmpty()) field->setText(selected);
     });
     return field;
@@ -77,10 +75,15 @@ MainWindow::MainWindow() {
 void MainWindow::processHashFiles(const std::vector<std::filesystem::path>& files) {
     hashResult_->clear();
     for (const auto& file : files) {
-        const auto result = crypto::HashService::file(file, hashAlgorithm_ ? hashAlgorithm_->currentText().toStdString() : "SHA256");
+        const auto result =
+            crypto::HashService::file(file, hashAlgorithm_ ? hashAlgorithm_->currentText().toStdString() : "SHA256");
         const QString message = QString::fromStdWString(file.wstring()) + ": " +
-            (result.ok() ? QString::fromStdString(result.value()) : "Erro - " + QString::fromStdString(result.message()));
-        if (hashResults_) hashResults_->addItem(message); else hashResult_->setText(message);
+                                (result.ok() ? QString::fromStdString(result.value())
+                                             : "Erro - " + QString::fromStdString(result.message()));
+        if (hashResults_)
+            hashResults_->addItem(message);
+        else
+            hashResult_->setText(message);
     }
 }
 
@@ -96,11 +99,19 @@ void MainWindow::dragEnterEvent(QDragEnterEvent* event) {
 
 void MainWindow::dropEvent(QDropEvent* event) {
     std::vector<std::filesystem::path> paths;
-    for (const auto& url : event->mimeData()->urls()) if (url.isLocalFile()) paths.emplace_back(url.toLocalFile().toStdWString());
+    for (const auto& url : event->mimeData()->urls())
+        if (url.isLocalFile()) paths.emplace_back(url.toLocalFile().toStdWString());
     const auto files = crypto::BatchService::regularFiles(paths);
-    if (files.empty()) { setError(tabs_ && tabs_->currentIndex() == 2 ? signResult_ : hashResult_, "Solte arquivos locais regulares."); return; }
-    if (tabs_ && tabs_->currentIndex() == 2) { signFiles_.insert(signFiles_.end(), files.begin(), files.end()); refreshSignQueue(); setSuccess(signResult_, "Arquivos adicionados a fila."); }
-    else processHashFiles(files);
+    if (files.empty()) {
+        setError(tabs_ && tabs_->currentIndex() == 2 ? signResult_ : hashResult_, "Solte arquivos locais regulares.");
+        return;
+    }
+    if (tabs_ && tabs_->currentIndex() == 2) {
+        signFiles_.insert(signFiles_.end(), files.begin(), files.end());
+        refreshSignQueue();
+        setSuccess(signResult_, "Arquivos adicionados a fila.");
+    } else
+        processHashFiles(files);
     event->acceptProposedAction();
 }
 
@@ -125,9 +136,15 @@ void MainWindow::createHashTab() {
 
     connect(calculate, &QPushButton::clicked, this, [this] {
         hashResult_->clear();
-        if (hashFile_->text().isEmpty()) { setError(hashResult_, "Selecione um arquivo."); return; }
+        if (hashFile_->text().isEmpty()) {
+            setError(hashResult_, "Selecione um arquivo.");
+            return;
+        }
         const auto result = crypto::HashService::file(toPath(hashFile_), hashAlgorithm_->currentText().toStdString());
-        if (!result.ok()) { setError(hashResult_, QString::fromStdString(result.message())); return; }
+        if (!result.ok()) {
+            setError(hashResult_, QString::fromStdString(result.message()));
+            return;
+        }
         setSuccess(hashResult_, hashAlgorithm_->currentText() + ": " + QString::fromStdString(result.value()));
     });
 }
@@ -163,21 +180,34 @@ void MainWindow::createKeyGenerationTab() {
         keyGenerationResult_->clear();
         const QString password = keyPassword_->text();
         const QString confirmation = keyPasswordConfirmation_->text();
-        if (publicKeyOutput_->text().isEmpty() || privateKeyOutput_->text().isEmpty() || password.isEmpty() || password != confirmation) {
+        if (publicKeyOutput_->text().isEmpty() || privateKeyOutput_->text().isEmpty() || password.isEmpty() ||
+            password != confirmation) {
             setError(keyGenerationResult_, "Informe destinos diferentes e senhas iguais, não vazias.");
         } else {
-            const auto result = crypto::KeyService::generateRsaKeyPair(toPath(publicKeyOutput_), toPath(privateKeyOutput_), password.toStdString());
-            if (result.ok()) setSuccess(keyGenerationResult_, "Par de chaves RSA gerado com sucesso.");
-            else setError(keyGenerationResult_, QString::fromStdString(result.message()));
+            const auto result = crypto::KeyService::generateRsaKeyPair(
+                toPath(publicKeyOutput_), toPath(privateKeyOutput_), password.toStdString());
+            if (result.ok())
+                setSuccess(keyGenerationResult_, "Par de chaves RSA gerado com sucesso.");
+            else
+                setError(keyGenerationResult_, QString::fromStdString(result.message()));
         }
         keyPassword_->clear();
         keyPasswordConfirmation_->clear();
     });
     connect(inspect, &QPushButton::clicked, this, [this] {
-        if (inspectPublicKey_->text().isEmpty()) { setError(keyInspectionResult_, "Selecione uma chave publica."); return; }
+        if (inspectPublicKey_->text().isEmpty()) {
+            setError(keyInspectionResult_, "Selecione uma chave publica.");
+            return;
+        }
         const auto details = crypto::KeyService::inspectPublicKey(toPath(inspectPublicKey_));
-        if (!details.ok()) { setError(keyInspectionResult_, QString::fromStdString(details.message())); return; }
-        setSuccess(keyInspectionResult_, QString("Algoritmo: %1 | RSA: %2 bits | Fingerprint SHA-256: %3").arg(QString::fromStdString(details.value().algorithm)).arg(details.value().bits).arg(QString::fromStdString(details.value().fingerprint)));
+        if (!details.ok()) {
+            setError(keyInspectionResult_, QString::fromStdString(details.message()));
+            return;
+        }
+        setSuccess(keyInspectionResult_, QString("Algoritmo: %1 | RSA: %2 bits | Fingerprint SHA-256: %3")
+                                             .arg(QString::fromStdString(details.value().algorithm))
+                                             .arg(details.value().bits)
+                                             .arg(QString::fromStdString(details.value().fingerprint)));
     });
 }
 
@@ -205,16 +235,32 @@ void MainWindow::createSignTab() {
     connect(sign, &QPushButton::clicked, this, [this] {
         signResult_->clear();
         const QString password = signPassword_->text();
-        if (signPrivateKey_->text().isEmpty() || password.isEmpty() || (signFiles_.empty() && (signFile_->text().isEmpty() || signOutput_->text().isEmpty()))) {
+        if (signPrivateKey_->text().isEmpty() || password.isEmpty() ||
+            (signFiles_.empty() && (signFile_->text().isEmpty() || signOutput_->text().isEmpty()))) {
             setError(signResult_, "Informe o arquivo, a chave privada, o destino e a senha.");
         } else {
             if (signFiles_.empty()) {
-                const auto result = crypto::SignatureService::signFile(toPath(signFile_), toPath(signPrivateKey_), toPath(signOutput_), password.toStdString());
-                if (result.ok()) setSuccess(signResult_, "Arquivo assinado com sucesso."); else setError(signResult_, QString::fromStdString(result.message()));
+                const auto result = crypto::SignatureService::signFile(toPath(signFile_), toPath(signPrivateKey_),
+                                                                       toPath(signOutput_), password.toStdString());
+                if (result.ok())
+                    setSuccess(signResult_, "Arquivo assinado com sucesso.");
+                else
+                    setError(signResult_, QString::fromStdString(result.message()));
             } else {
-                bool conflict = false; for (const auto& file : signFiles_) conflict = conflict || std::filesystem::exists(crypto::BatchService::signaturePath(file));
-                if (conflict && QMessageBox::question(this, "Substituir assinaturas", "Ha assinaturas existentes. Substitui-las?") != QMessageBox::Yes) { setError(signResult_, "Lote cancelado."); }
-                else { const auto results = crypto::BatchService::signFiles(signFiles_, toPath(signPrivateKey_), password.toStdString()); int ok = 0; for (const auto& item : results) ok += item.ok; setSuccess(signResult_, QString("Lote concluido: %1/%2 assinados.").arg(ok).arg(results.size())); }
+                bool conflict = false;
+                for (const auto& file : signFiles_)
+                    conflict = conflict || std::filesystem::exists(crypto::BatchService::signaturePath(file));
+                if (conflict &&
+                    QMessageBox::question(this, "Substituir assinaturas",
+                                          "Ha assinaturas existentes. Substitui-las?") != QMessageBox::Yes) {
+                    setError(signResult_, "Lote cancelado.");
+                } else {
+                    const auto results =
+                        crypto::BatchService::signFiles(signFiles_, toPath(signPrivateKey_), password.toStdString());
+                    int ok = 0;
+                    for (const auto& item : results) ok += item.ok;
+                    setSuccess(signResult_, QString("Lote concluido: %1/%2 assinados.").arg(ok).arg(results.size()));
+                }
             }
         }
         signPassword_->clear();
@@ -245,9 +291,12 @@ void MainWindow::createVerifyTab() {
             setError(verifyResult_, "Informe o arquivo, a assinatura e a chave pública.");
             return;
         }
-        const auto result = crypto::SignatureService::verifyFile(toPath(verifyFile_), toPath(verifySignature_), toPath(verifyPublicKey_));
-        if (result.ok()) setSuccess(verifyResult_, "Assinatura válida.");
-        else setError(verifyResult_, "Assinatura inválida ou não foi possível verificar os arquivos.");
+        const auto result = crypto::SignatureService::verifyFile(toPath(verifyFile_), toPath(verifySignature_),
+                                                                 toPath(verifyPublicKey_));
+        if (result.ok())
+            setSuccess(verifyResult_, "Assinatura válida.");
+        else
+            setError(verifyResult_, "Assinatura inválida ou não foi possível verificar os arquivos.");
     });
 }
 
